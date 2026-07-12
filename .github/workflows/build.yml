@@ -39,36 +39,29 @@ jobs:
 
       - name: Mount Google Drive
         run: |
-          rclone mount gdrive: /mnt/gdrive --daemon --allow-other --vfs-cache-mode writes
-          sleep 5 # Chờ mount xong
+          # Thêm các tham số tối ưu cache chuyên dụng cho việc ghi lượng lớn file nhỏ
+          rclone mount gdrive: /mnt/gdrive --daemon --allow-other --vfs-cache-mode full --vfs-write-back 5s --buffer-size 64M
+          sleep 5
 
       - name: Repo Init & Sync
         run: |
-          # 1. Tạo thư mục bin cục bộ và tải công cụ repo từ Google
           mkdir -p ~/bin
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
-          
-          # 2. Thêm ~/bin vào biến môi trường PATH để hệ thống nhận diện được lệnh "repo"
           export PATH=~/bin:$PATH
           
-          # 3. Cấu hình danh tính Git cơ bản (Bắt buộc phải có để repo init không bị lỗi)
           git config --global user.name "Neonova Solara"
           git config --global user.email "vinhhpn178@gmail.com"
 
-          # 4. Tạo thư mục làm việc trên Google Drive đã mount
           mkdir -p /mnt/gdrive/android10
           cd /mnt/gdrive/android10
           
-          # 5. Tiến hành khởi tạo Manifest và Sync code
           repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --git-lfs
-          
-          # Tạo local_manifests để chuẩn bị kéo tree cho Lavender
           mkdir -p .repo/local_manifests
           
-          # Bắt đầu kéo source code về thẳng Drive
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
-
+          # THAY ĐỔI: Thêm flag --verbose và -j1 để ép in log chi tiết từng file, xem có chạy thật không
+          repo sync -c -j1 --fail-fast --force-sync --no-clone-bundle --no-tags --verbose
+          
       - name: Build ROM
         run: |
           cd /mnt/gdrive/android10
