@@ -25,7 +25,15 @@ jobs:
       - name: Setup rclone
         run: |
           mkdir -p ~/.config/rclone
-          echo '${{ secrets.RCLONE_CONFIG_TOKEN }}' > ~/.config/rclone/rclone.conf
+          
+          # Ép ghi đúng định dạng cấu hình rclone chuẩn
+          cat << EOF > ~/.config/rclone/rclone.conf
+          [gdrive]
+          type = drive
+          token = ${{ secrets.RCLONE_CONFIG_TOKEN }}
+          EOF
+          
+          # Thêm sudo để tạo thư mục hệ thống
           sudo mkdir -p /mnt/gdrive
           sudo chown $(whoami):$(whoami) /mnt/gdrive
 
