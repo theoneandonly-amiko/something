@@ -26,16 +26,17 @@ jobs:
         run: |
           mkdir -p ~/.config/rclone
           echo '${{ secrets.RCLONE_CONFIG_TOKEN }}' > ~/.config/rclone/rclone.conf
-          mkdir -p /mnt/gdrive
+          sudo mkdir -p /mnt/gdrive
+          sudo chown $(whoami):$(whoami) /mnt/gdrive
 
       - name: Mount Google Drive
         run: |
-          rclone mount gdrive: /mnt/gdrive --daemon --allow-other
+          rclone mount gdrive: /mnt/gdrive --daemon --allow-other --vfs-cache-mode writes
           sleep 5 # Chờ mount xong
 
       - name: Repo Init & Sync
         run: |
-          mkdir -p /mnt/gdrive/android10
+          sudo mkdir -p /mnt/gdrive/android10
           cd /mnt/gdrive/android10
           repo init -u https://github.com/LineageOS/android.git -b lineage-17.1
           # Tạo local_manifests ở đây để sync tree Lavender
