@@ -44,12 +44,29 @@ jobs:
 
       - name: Repo Init & Sync
         run: |
-          sudo mkdir -p /mnt/gdrive/android10
+          # 1. Tạo thư mục bin cục bộ và tải công cụ repo từ Google
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          
+          # 2. Thêm ~/bin vào biến môi trường PATH để hệ thống nhận diện được lệnh "repo"
+          export PATH=~/bin:$PATH
+          
+          # 3. Cấu hình danh tính Git cơ bản (Bắt buộc phải có để repo init không bị lỗi)
+          git config --global user.name "Neonova Solara"
+          git config --global user.email "vinhhpn178@gmail.com"
+
+          # 4. Tạo thư mục làm việc trên Google Drive đã mount
+          mkdir -p /mnt/gdrive/android10
           cd /mnt/gdrive/android10
-          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1
-          # Tạo local_manifests ở đây để sync tree Lavender
+          
+          # 5. Tiến hành khởi tạo Manifest và Sync code
+          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --git-lfs
+          
+          # Tạo local_manifests để chuẩn bị kéo tree cho Lavender
           mkdir -p .repo/local_manifests
-          # (Bạn sẽ tạo file roomservice.xml ở đây sau)
+          
+          # Bắt đầu kéo source code về thẳng Drive
           repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
 
       - name: Build ROM
