@@ -40,16 +40,17 @@ jobs:
           
           git config --global user.name "Neonova Solara"
           git config --global user.email "vinhhpn178@gmail.com"
+          # Ép Git luôn tự động đồng ý, không bật trình terminal hỏi han
+          git config --global core.pager cat
 
-          # Tạo thư mục build ngay trên SSD nội bộ của GitHub Actions
           mkdir -p ~/android10
           cd ~/android10
           
-          # Khởi tạo và đồng bộ (Lúc này log sẽ nhảy liên tục cho bồ xem!)
-          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --git-lfs
+          # THAY ĐỔI: Thêm flag --no-clone-bundle và --no-tags ngay từ bước init, cấm hỏi cung bằng --no-repo-verify
+          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --no-repo-verify --depth=1
           
-          # Tiến hành sync code (Chạy trên SSD nội bộ cực kỳ mượt mà)
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+          # THAY ĐỔI: Thêm các tham số ép chạy ngầm hoàn toàn, tự động bỏ qua các prompt xác nhận
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --no-manifest-update --optimized-fetch
 
       - name: Đóng gói và Đẩy ngược source code lên Google Drive Pro
         if: always() # Dù bước trên có bị quá giờ hay lỗi thì vẫn đẩy đống code đã tải được lên Drive để lưu trữ
