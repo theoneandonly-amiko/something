@@ -1,4 +1,4 @@
-name: "Cook_Lavender_A10"
+name: "Cook_Lavender_A10_Final"
 
 on:
   workflow_dispatch:
@@ -17,12 +17,11 @@ jobs:
           sudo rm -rf /opt/ghc
           df -h
 
-      - name: Cài đặt công cụ và cấu hình rclone (Không mount đĩa ảo nữa)
+      - name: Cài đặt công cụ và cấu hình rclone
         run: |
           sudo apt-get update
           sudo apt-get install -y git-core gnupg flex bison gperf build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc unzip rclone
           
-          # Cấu hình rclone dạng API thông thường
           mkdir -p ~/.config/rclone
           cat << EOF > ~/.config/rclone/rclone.conf
           [gdrive]
@@ -30,7 +29,7 @@ jobs:
           token = ${{ secrets.RCLONE_CONFIG_TOKEN }}
           EOF
 
-      - name: Repo Init & Sync trực tiếp trên SSD máy ảo
+      - name: Repo Init & Sync + Kéo Tree Lavender
         run: |
           # Cài công cụ repo
           mkdir -p ~/bin
@@ -40,24 +39,36 @@ jobs:
           
           git config --global user.name "Neonova Solara"
           git config --global user.email "vinhhpn178@gmail.com"
-          # Ép Git luôn tự động đồng ý, không bật trình terminal hỏi han
           git config --global core.pager cat
 
+          # Tạo thư mục làm việc trên SSD nội bộ
           mkdir -p ~/android10
           cd ~/android10
           
-          # THAY ĐỔI: Thêm flag --no-clone-bundle và --no-tags ngay từ bước init, cấm hỏi cung bằng --no-repo-verify
+          # Init Source gốc (Bỏ qua verify, giới hạn depth=1 cho nhanh)
           repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --no-repo-verify --depth=1
           
-          # THAY ĐỔI: Thêm các tham số ép chạy ngầm hoàn toàn, tự động bỏ qua các prompt xác nhận
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --no-manifest-update --optimized-fetch
+          # TỰ ĐỘNG TẠO ROOMSERVICE.XML CHO LAVENDER
+          mkdir -p .repo/local_manifests
+          cat << EOF > .repo/local_manifests/roomservice.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <manifest>
+            <project name="LineageOS/android_device_xiaomi_lavender" path="device/xiaomi/lavender" remote="github" revision="lineage-17.1" />
+            <project name="LineageOS/android_hardware_xiaomi" path="hardware/xiaomi" remote="github" revision="lineage-17.1" />
+            <project name="TheMuppets/proprietary_vendor_xiaomi" path="vendor/xiaomi" remote="github" revision="lineage-17.1" />
+            <project name="LineageOS/android_kernel_xiaomi_sdm660" path="kernel/xiaomi/sdm660" remote="github" revision="lineage-17.1" />
+          </manifest>
+          EOF
+          
+          # Tiến hành sync toàn bộ code (Hiện tiến trình % trực quan)
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --progress
 
-      - name: Đóng gói và Đẩy ngược source code lên Google Drive Pro
-        if: always() # Dù bước trên có bị quá giờ hay lỗi thì vẫn đẩy đống code đã tải được lên Drive để lưu trữ
+      - name: Đóng gói thô và Đẩy lên Google Drive Pro
+        if: always() # Lỗi hay không lỗi vẫn đẩy lên để giữ thành quả
         run: |
           cd ~
-          echo "Đang nén đống source code lại thành 1 file để up cho lẹ..."
-          tar -czf android10_source.tar.gz android10
+          echo "Gom đống source code lại thành file tar thô (Không nén để CPU nhẹ gánh)..."
+          tar -cf android10_source.tar android10
           
-          echo "Đang đẩy file lên Google Drive Pro..."
-          rclone copy android10_source.tar.gz gdrive:/ -P
+          echo "Bắt đầu đẩy file lên Google Drive bằng Token Production..."
+          rclone copy android10_source.tar gdrive:/ -P
