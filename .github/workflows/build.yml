@@ -15,7 +15,6 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-          df -h
 
       - name: Cài đặt công cụ và cấu hình rclone
         run: |
@@ -31,7 +30,6 @@ jobs:
 
       - name: Repo Init & Sync + Kéo Tree Lavender
         run: |
-          # Cài công cụ repo
           mkdir -p ~/bin
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
@@ -39,16 +37,13 @@ jobs:
           
           git config --global user.name "Neonova Solara"
           git config --global user.email "vinhhpn178@gmail.com"
-          git config --global core.pager cat
 
-          # Tạo thư mục làm việc trên SSD nội bộ
           mkdir -p ~/android10
           cd ~/android10
           
-          # Init Source gốc (Bỏ qua verify, giới hạn depth=1 cho nhanh)
-          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1 --no-repo-verify --depth=1
+          # Cú pháp nguyên bản chuẩn mực, không dùng flag cắt giảm
+          repo init -u https://github.com/LineageOS/android.git -b lineage-17.1
           
-          # TỰ ĐỘNG TẠO ROOMSERVICE.XML CHO LAVENDER
           mkdir -p .repo/local_manifests
           cat << EOF > .repo/local_manifests/roomservice.xml
           <?xml version="1.0" encoding="UTF-8"?>
@@ -60,15 +55,12 @@ jobs:
           </manifest>
           EOF
           
-          # Tiến hành sync toàn bộ code
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --show-current-branch
+          # Sync nguyên bản theo số nhân CPU
+          repo sync -c -j$(nproc) --force-sync
 
       - name: Đóng gói thô và Đẩy lên Google Drive Pro
-        if: always() # Lỗi hay không lỗi vẫn đẩy lên để giữ thành quả
+        if: always()
         run: |
           cd ~
-          echo "Gom đống source code lại thành file tar thô (Không nén để CPU nhẹ gánh)..."
           tar -cf android10_source.tar android10
-          
-          echo "Bắt đầu đẩy file lên Google Drive bằng Token Production..."
           rclone copy android10_source.tar gdrive:/ -P
