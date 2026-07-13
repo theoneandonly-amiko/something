@@ -60,8 +60,8 @@ jobs:
           </manifest>
           EOF
           
-          # Tiến hành sync toàn bộ code (Hiện tiến trình % trực quan)
-          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --progress
+          # Tiến hành sync toàn bộ code
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags --show-current-branch
 
       - name: Đóng gói thô và Đẩy lên Google Drive Pro
         if: always() # Lỗi hay không lỗi vẫn đẩy lên để giữ thành quả
